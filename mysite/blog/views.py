@@ -50,11 +50,20 @@ def post_detail(request, year, month, day, post):
     
     comments =  post.comments.filter(active=True)
     form = CommentForm()
+
+    # list of similar_post
+    post_tags_ids = post.tags.values_list('id', flat=True) # get the id values from the tags associate with the post and flat=True will turn [(1,), (2,), (3,)] to this [1, 2, 3]
+    similar_posts = Post.published.filter(tags__in=post_tags_ids)\
+                                    .exclude(id=post.id)
+    similar_posts = similar_posts.annotate(same_tags=Count('tags'))\
+                                 .order_by('-same_tags', '-publish')[:4]
+    
     return render(request, 
                   'blog\post\detail.html', 
                   {'post': post,
                    'comments': comments,
-                   'form': form})
+                   'form': form,
+                   'similar_posts': similar_posts})
 
 # using class based view
 class PostListView(ListView):
